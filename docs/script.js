@@ -1,4 +1,29 @@
-// Hardcoded fallback data only
+const warningState = {
+  engineTemp: 2,
+  abs: 1,
+  oil: 2,
+};
+
+function playStartLights(callback) {
+  const lights = document.querySelectorAll('.light');
+  const revAudio = new Audio('revving.mp3');
+  revAudio.loop = true;
+  revAudio.play();
+  lights.forEach((light, i) => {
+    setTimeout(() => { light.style.opacity = 1; }, 500 * (i + 1));
+  });
+  setTimeout(() => {
+    revAudio.pause();
+    revAudio.currentTime = 0;
+    lights.forEach(light => light.style.opacity = 0.2);
+    const video = document.getElementById("bgvid");
+    const engineAudio = document.getElementById("engineAudio");
+    if (video) video.play();
+    if (engineAudio) engineAudio.play();
+    callback();
+  }, 3500);
+}
+
 const data = {
   personas: ["CIO", "CISO", "Network Architect", "SecOps Lead"],
   tracks: ["Finance", "Healthcare", "Retail", "Government"],
@@ -15,86 +40,27 @@ function updateTombola() {
   document.getElementById("team").textContent = pickRandom(data.teams);
 }
 
-function playStartLights(callback) {
-  const lightElems = document.querySelectorAll('.light');
-  const revAudio = new Audio('revving.mp3');
-  revAudio.loop = true;
-  revAudio.play();
-
-  for (let i = 0; i < 5; i++) {
-    setTimeout(() => {
-      lightElems[i].style.opacity = 1;
-    }, 500 * (i + 1));
-  }
-
-  setTimeout(() => {
-    revAudio.pause();
-    revAudio.currentTime = 0;
-
-    lightElems.forEach(light => light.style.opacity = 0.2);
-
-    const bgvid = document.getElementById("bgvid");
-    if (bgvid) bgvid.play();
-
-    const engineSound = document.getElementById("engineAudio");
-    if (engineSound) engineSound.play();
-
-    callback();
-  }, 3500);
-}
-
 function spin() {
-  document.gauge.options.value = 0;
-  document.gauge.draw();
-
   playStartLights(() => {
-    const targetValue = Math.floor(Math.random() * 240) + 20;
-    let currentValue = 0;
-
-    const interval = setInterval(() => {
-      if (currentValue >= targetValue) {
-        clearInterval(interval);
-        updateTombola();
-        return;
-      }
-      currentValue += 10;
-      document.gauge.options.value = currentValue;
-      document.gauge.draw();
-    }, 50);
+    updateTombola();
+    // Random speed above 120
+    const speed = Math.floor(120 + Math.random() * 120);
+    // Randomly set icon states (0 or 1)
+    const iconStates = {
+      engineTemp: Math.round(Math.random()),
+      abs: Math.round(Math.random()),
+      gas: Math.round(Math.random())
+    };
+    window.draw(
+      speed / 240,
+      iconStates
+    );
   });
 }
 
-window.onload = () => {
-  const size = Math.min(window.innerWidth, window.innerHeight) * 0.5;
+window.spin = spin;
 
-  const gaugeConfig = {
-    renderTo: 'speedGauge',
-    width: size,
-    height: size,
-    minValue: 0,
-    maxValue: 240,
-    value: 0,
-    majorTicks: ["0", "40", "80", "120", "160", "200", "240"],
-    highlights: [
-      { from: 200, to: 240, color: "rgba(255,30,0,.25)" }
-    ],
-    needleType: "arrow",
-    needleColor: "red",
-    valueBox: true,
-    colorPlate: "#E5F1FA",
-    colorMajorTicks: "#000",
-    colorMinorTicks: "#333",
-    colorTitle: "#000",
-    colorUnits: "#000",
-    colorNumbers: "#000"
-  };
-
-  document.gauge = new RadialGauge(gaugeConfig).draw();
-
-  window.onresize = () => {
-    const newSize = Math.min(window.innerWidth, window.innerHeight) * 0.5;
-    gaugeConfig.width = newSize;
-    gaugeConfig.height = newSize;
-    document.gauge.update(gaugeConfig).draw();
-  };
-};
+window.onload = function() {
+  // Draw idle state: speed 0, all icons off
+  window.draw(0, {engineTemp:0, abs:0, gas:0});
+}
